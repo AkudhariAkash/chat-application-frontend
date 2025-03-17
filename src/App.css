@@ -1,0 +1,52 @@
+.voice-message-container {
+    display: flex;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  
+  .voice-message-container.sent {
+    justify-content: flex-end;
+  }
+  
+  .voice-message-container.received {
+    justify-content: flex-start;
+  }
+  
+  .voice-message {
+    padding: 12px;
+    border-radius: 10px;
+    max-width: 250px;
+    position: relative;
+  }
+  
+  .voice-message.sent .voice-message {
+    background-color: #3b82f6; /* Blue for sent messages */
+    color: white;
+  }
+  
+  .voice-message.received .voice-message {
+    background-color: #f3f4f6; /* Light gray for received messages */
+  }
+  
+  .voice-message audio {
+    width: 100%;
+    outline: none;
+  }
+  
+  .voice-message .delete-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 4px 6px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  
+  .voice-message .delete-button:hover {
+    background-color: darkred;
+  }
+  
