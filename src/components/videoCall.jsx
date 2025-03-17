@@ -42,7 +42,7 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
 
   // Socket.io reference
   const socketRef = useRef(null)
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://your-server-url.com"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://chat-application-backendend.onrender.com"
 
   // Refs
   const localVideoRef = useRef(null)
