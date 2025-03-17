@@ -1,11 +1,14 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Share, X, UserPlus, Users } from "lucide-react"
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Share, X, UserPlus, Users, Maximize } from "lucide-react"
 import { io } from "socket.io-client"
 import axios from "axios"
 
-const VideoCall = ({ callerId, receiverId, roomId, onEndCall }) => {
+const VideoCall = ({ callerId, receiverId, onEndCall }) => {
+  // Generate a unique room ID based on caller and receiver IDs
+  const [roomId] = useState(() => `room_${callerId}_${receiverId}_${Date.now()}`)
+
   // State for UI controls
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOn, setIsVideoOn] = useState(true)
@@ -42,44 +45,53 @@ const VideoCall = ({ callerId, receiverId, roomId, onEndCall }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Get current user data
-        const currentUserResponse = await axios.get(`${apiUrl}/api/auths/user/${callerId}`)
-        setCurrentUser(currentUserResponse.data)
+        // Get all users
+        const allUsersResponse = await axios.get(`${apiUrl}/api/auths/getAllUsers/${callerId}`)
+        const users = allUsersResponse.data || []
 
-        // Get receiver user data
-        const receiverUserResponse = await axios.get(`${apiUrl}/api/auths/user/${receiverId}`)
-        setReceiverUser(receiverUserResponse.data)
+        // Find receiver user from the response
+        const receiverUserData = users.find((user) => user._id === receiverId)
+        setReceiverUser(receiverUserData)
+
+        // Get current user data
+        const currentUserResponse = await axios.get(`${apiUrl}/api/auths/getAllUsers/${receiverId}`)
+        const currentUserData = currentUserResponse.data?.find((user) => user._id === callerId) || {
+          _id: callerId,
+          username: "You",
+        }
+        setCurrentUser(currentUserData)
 
         // Initialize participants with current user and receiver
         const initialParticipants = [
           {
             id: callerId,
-            name: currentUserResponse.data.username + " (You)",
+            name: currentUserData.username + " (You)",
             isHost: true,
             isMuted: false,
             isVideoOn: true,
-            avatar: getAvatarInitials(currentUserResponse.data),
+            avatar: getAvatarInitials(currentUserData),
           },
         ]
 
-        if (receiverUserResponse.data) {
+        if (receiverUserData) {
           initialParticipants.push({
             id: receiverId,
-            name: receiverUserResponse.data.username,
+            name: receiverUserData.username,
             isHost: false,
             isMuted: false,
             isVideoOn: true,
-            avatar: getAvatarInitials(receiverUserResponse.data),
+            avatar: getAvatarInitials(receiverUserData),
           })
         }
 
         setParticipants(initialParticipants)
 
-        // Get all other users for the available users list
-        const allUsersResponse = await axios.get(`${apiUrl}/api/auths/getAllUsers/${callerId}`)
         // Filter out the receiver who is already in the call
-        const filteredUsers = allUsersResponse.data.filter((user) => user._id !== receiverId)
+        const filteredUsers = users.filter((user) => user._id !== receiverId)
         setAvailableUsers(filteredUsers)
+
+        // Log call to database
+        logCallStart()
       } catch (error) {
         console.error("Error fetching users:", error)
       }
@@ -88,12 +100,23 @@ const VideoCall = ({ callerId, receiverId, roomId, onEndCall }) => {
     fetchUsers()
   }, [callerId, receiverId, apiUrl])
 
+  // Log call start
+  const logCallStart = async () => {
+    try {
+      await axios.post(`${apiUrl}/api/messages/add-call`, {
+        from: callerId,
+        to: receiverId,
+        type: "video",
+        status: "started",
+      })
+    } catch (error) {
+      console.error("Error logging call start:", error)
+    }
+  }
+
   // Helper function to get avatar initials
   const getAvatarInitials = (user) => {
-    if (user.avatarImage && user.avatarImage.initials) {
-      return user.avatarImage.initials
-    }
-    // Fallback to first letter of username
+    if (!user || !user.username) return "?"
     return user.username.charAt(0).toUpperCase()
   }
 
@@ -165,16 +188,14 @@ const VideoCall = ({ callerId, receiverId, roomId, onEndCall }) => {
         socket.emit("join-room", roomId, callerId)
 
         // Create and send offer (if you're the caller)
-        if (callerId) {
-          const offer = await peerConnection.createOffer()
-          await peerConnection.setLocalDescription(offer)
+        const offer = await peerConnection.createOffer()
+        await peerConnection.setLocalDescription(offer)
 
-          // Send offer to the other peer via signaling server
-          socket.emit("offer", {
-            roomId,
-            offer,
-          })
-        }
+        // Send offer to the other peer via signaling server
+        socket.emit("offer", {
+          roomId,
+          offer,
+        })
 
         // Listen for remote user connected
         socket.on("user-connected", (userId) => {
@@ -390,16 +411,31 @@ const VideoCall = ({ callerId, receiverId, roomId, onEndCall }) => {
         // Remove from available users
         setAvailableUsers((prev) => prev.filter((u) => u._id !== user._id))
 
-        // In a real implementation, you would send an invitation via the signaling server
+        // Send notification to the user about the call invitation
         if (socketRef.current) {
-          // Notify the user about the call invitation
           socketRef.current.emit("send-notification", {
             email: user.email,
             message: `${currentUser?.username || "Someone"} is inviting you to a video call`,
           })
 
-          // This is a placeholder - actual implementation would depend on your backend
-          console.log(`Inviting user ${user._id} to join room ${roomId}`)
+          // Send call invitation
+          try {
+            await axios.post(`${apiUrl}/api/messages/add-call`, {
+              from: callerId,
+              to: user._id,
+              type: "video",
+              status: "invited",
+            })
+
+            // Call the user
+            await axios.post(`${apiUrl}/api/videoCall/call-user`, {
+              from: callerId,
+              to: user._id,
+              type: "video",
+            })
+          } catch (error) {
+            console.error("Error sending call invitation:", error)
+          }
         }
       }
     } catch (error) {
@@ -411,14 +447,15 @@ const VideoCall = ({ callerId, receiverId, roomId, onEndCall }) => {
   const handleEndCall = async () => {
     try {
       // Log call details to database
-      await axios.post(`${apiUrl}/api/videoCall/log`, {
+      await axios.post(`${apiUrl}/api/messages/add-call`, {
         from: callerId,
         to: receiverId,
-        duration: callDuration,
+        type: "video",
         status: "ended",
+        duration: callDuration,
       })
     } catch (error) {
-      console.error("Error logging call:", error)
+      console.error("Error logging call end:", error)
     }
 
     // Stop all tracks
@@ -458,6 +495,7 @@ const VideoCall = ({ callerId, receiverId, roomId, onEndCall }) => {
           <div className="text-sm text-gray-300">{callDuration}</div>
           <div className="text-sm px-2 py-1 rounded-full bg-gray-700">{connectionStatus}</div>
         </div>
+        <div className="text-sm">{receiverUser?.username && `Call with: ${receiverUser.username}`}</div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
@@ -549,6 +587,14 @@ const VideoCall = ({ callerId, receiverId, roomId, onEndCall }) => {
                 title={isScreenSharing ? "Stop sharing" : "Share screen"}
               >
                 <Share size={24} />
+              </button>
+
+              <button
+                onClick={toggleFullScreen}
+                className="p-3 rounded-full bg-gray-700 hover:bg-gray-600"
+                title="Toggle fullscreen"
+              >
+                <Maximize size={24} />
               </button>
 
               <button

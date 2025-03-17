@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-const chatURL="https://chat-app-backend-2ph1.onrender.com/api"
+const chatURL="https://chat-application-backendend.onrender.com/api"
 
 const VerifyEmail = () => {
   const { token } = useParams();

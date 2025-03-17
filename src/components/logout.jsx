@@ -16,7 +16,7 @@ const useLogout = () => {
         return;
       }
 
-      const response = await fetch(`https://chat-app-backend-2ph1.onrender.com/api/logout`, {
+      const response = await fetch(`https://chat-application-backendend.onrender.com/api/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

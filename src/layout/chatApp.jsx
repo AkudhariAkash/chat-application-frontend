@@ -34,9 +34,9 @@ import {
 } from "@heroicons/react/24/solid"
 import Picker from "emoji-picker-react" // Using emoji-picker-react
 
-const chatURL = "https://chat-app-backend-2ph1.onrender.com/api"
+const chatURL = "https://chat-application-backendend.onrender.com/api"
 // Socket connection
-const socket = io("https://chat-app-backend-2ph1.onrender.com/api", {
+const socket = io("https://chat-application-backendend.onrender.com/api", {
   withCredentials: true,
 })
 
