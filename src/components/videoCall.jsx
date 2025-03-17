@@ -1,9 +1,19 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Share, X, UserPlus, Users, Maximize } from "lucide-react"
 import { io } from "socket.io-client"
-import axios from "axios"
+
+// Icons (you can replace with your preferred icon library)
+const Mic = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+const MicOff = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="2" x2="22" y1="2" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 0v-2"/><path d="M12 19v3"/><path d="M8 22h8"/><path d="m15 9-3-3-3 3"/><path d="M12 6v6"/></svg>
+const Video = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+const VideoOff = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="2" x2="22" y1="2" y2="22"/><path d="M10.66 6H14a2 2 0 0 1 2 2v2.34l1 1L22 8v8"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+const PhoneOff = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="22" x2="2" y1="2" y2="22"/></svg>
+const Share = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+const X = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+const UserPlus = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+const Users = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+const Maximize = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
 
 const VideoCall = ({ callerId, receiverId, onEndCall }) => {
   // Generate a unique room ID based on caller and receiver IDs
@@ -32,7 +42,7 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
 
   // Socket.io reference
   const socketRef = useRef(null)
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://chat-application-backendend.onrender.com"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://your-server-url.com"
 
   // Refs
   const localVideoRef = useRef(null)
@@ -45,20 +55,17 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Get all users
-        const allUsersResponse = await axios.get(`${apiUrl}/api/auths/getAllUsers/${callerId}`)
-        const users = allUsersResponse.data || []
+        // Get all users - replace with your API
+        const allUsersResponse = await fetch(`${apiUrl}/api/users?excludeId=${callerId}`)
+        const users = await allUsersResponse.json()
 
         // Find receiver user from the response
         const receiverUserData = users.find((user) => user._id === receiverId)
         setReceiverUser(receiverUserData)
 
         // Get current user data
-        const currentUserResponse = await axios.get(`${apiUrl}/api/auths/getAllUsers/${receiverId}`)
-        const currentUserData = currentUserResponse.data?.find((user) => user._id === callerId) || {
-          _id: callerId,
-          username: "You",
-        }
+        const currentUserResponse = await fetch(`${apiUrl}/api/users/${callerId}`)
+        const currentUserData = await currentUserResponse.json()
         setCurrentUser(currentUserData)
 
         // Initialize participants with current user and receiver
@@ -94,6 +101,31 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
         logCallStart()
       } catch (error) {
         console.error("Error fetching users:", error)
+        
+        // Fallback for demo purposes
+        setCurrentUser({ _id: callerId, username: "You" })
+        setReceiverUser({ _id: receiverId, username: "Receiver" })
+        
+        const initialParticipants = [
+          {
+            id: callerId,
+            name: "You",
+            isHost: true,
+            isMuted: false,
+            isVideoOn: true,
+            avatar: "Y",
+          },
+          {
+            id: receiverId,
+            name: "Receiver",
+            isHost: false,
+            isMuted: false,
+            isVideoOn: true,
+            avatar: "R",
+          }
+        ]
+        
+        setParticipants(initialParticipants)
       }
     }
 
@@ -103,11 +135,17 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
   // Log call start
   const logCallStart = async () => {
     try {
-      await axios.post(`${apiUrl}/api/messages/add-call`, {
-        from: callerId,
-        to: receiverId,
-        type: "video",
-        status: "started",
+      await fetch(`${apiUrl}/api/calls`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: callerId,
+          to: receiverId,
+          type: "video",
+          status: "started",
+        }),
       })
     } catch (error) {
       console.error("Error logging call start:", error)
@@ -124,8 +162,10 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
   useEffect(() => {
     // Connect to signaling server
     socketRef.current = io(apiUrl)
-
     const socket = socketRef.current
+
+    // Register user with socket server
+    socket.emit("register-user", callerId)
 
     const initializeCall = async () => {
       try {
@@ -142,7 +182,10 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
 
         // Create RTCPeerConnection
         const configuration = {
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }],
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" }, 
+            { urls: "stun:stun1.l.google.com:19302" }
+          ],
         }
 
         const peerConnection = new RTCPeerConnection(configuration)
@@ -167,7 +210,7 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
           if (event.candidate) {
             // Send ICE candidate to the other peer via signaling server
             socket.emit("ice-candidate", {
-              roomId,
+              to: receiverId,
               candidate: event.candidate,
             })
           }
@@ -184,60 +227,96 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
           }
         }
 
-        // Join the room
-        socket.emit("join-room", roomId, callerId)
-
-        // Create and send offer (if you're the caller)
-        const offer = await peerConnection.createOffer()
-        await peerConnection.setLocalDescription(offer)
-
-        // Send offer to the other peer via signaling server
-        socket.emit("offer", {
-          roomId,
-          offer,
+        // Initiate call to receiver
+        socket.emit("call-users", {
+          from: callerId,
+          toUsers: [receiverId],
+          roomId: roomId
         })
 
-        // Listen for remote user connected
-        socket.on("user-connected", (userId) => {
-          console.log("User connected to room:", userId)
-          setConnectionStatus("User joined")
+        // Listen for incoming call (for receiver)
+        socket.on("incoming-call", ({ from, roomId: incomingRoomId }) => {
+          console.log(`Incoming call from ${from} in room ${incomingRoomId}`)
+          // Auto-accept the call in this implementation
+          socket.emit("accept-call", { userId: callerId, roomId: incomingRoomId })
         })
 
-        // Listen for remote user disconnected
-        socket.on("user-disconnected", (userId) => {
-          console.log("User disconnected from room:", userId)
-          setConnectionStatus("User left")
-
-          // Remove user from participants
-          setParticipants((prev) => prev.filter((p) => p.id !== userId))
+        // Listen for user joined
+        socket.on("user-joined", ({ userId }) => {
+          console.log(`User ${userId} joined the call`)
+          setConnectionStatus("Connected")
+          
+          // Create and send offer
+          createAndSendOffer()
         })
+        
+        // Function to create and send offer
+        const createAndSendOffer = async () => {
+          try {
+            const offer = await peerConnection.createOffer()
+            await peerConnection.setLocalDescription(offer)
+            
+            // This would be handled by your signaling mechanism
+            // For simplicity, we'll assume the server routes this appropriately
+            // In a real implementation, you'd send this to the specific user
+            socket.emit("offer", { offer, to: receiverId, from: callerId, roomId })
+          } catch (err) {
+            console.error("Error creating offer:", err)
+          }
+        }
 
-        // Listen for offers from the other peer
-        socket.on("offer", async (offer) => {
+        // Listen for call rejected
+        socket.on("call-rejected", ({ userId }) => {
+          console.log(`Call rejected by ${userId}`)
+          setConnectionStatus("Call rejected")
+          // You might want to end the call here
+        })
+        
+        // Listen for offers
+        socket.on("offer", async ({ offer, from }) => {
           if (peerConnectionRef.current) {
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer))
+            
+            // Create answer
             const answer = await peerConnectionRef.current.createAnswer()
             await peerConnectionRef.current.setLocalDescription(answer)
-
-            // Send answer back to the caller
-            socket.emit("answer", {
-              roomId,
-              answer,
-            })
+            
+            // Send answer back
+            socket.emit("answer", { answer, to: from, from: callerId, roomId })
           }
         })
-
-        // Listen for answers from the other peer
-        socket.on("answer", async (answer) => {
+        
+        // Listen for answers
+        socket.on("answer", async ({ answer }) => {
           if (peerConnectionRef.current) {
             await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer))
           }
         })
 
-        // Listen for ICE candidates from the other peer
-        socket.on("ice-candidate", async (candidate) => {
+        // Listen for ICE candidates
+        socket.on("ice-candidate", (candidate) => {
           if (peerConnectionRef.current) {
-            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+            peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+              .catch(err => console.error("Error adding ICE candidate:", err))
+          }
+        })
+
+        // Listen for screen sharing events
+        socket.on("screen-shared", ({ userId }) => {
+          console.log(`User ${userId} started screen sharing`)
+          // Update UI to indicate remote user is screen sharing
+        })
+
+        socket.on("screen-share-stopped", ({ userId }) => {
+          console.log(`User ${userId} stopped screen sharing`)
+          // Update UI to indicate remote user stopped screen sharing
+        })
+
+        // Listen for call ended
+        socket.on("call-ended", ({ roomId: endedRoomId }) => {
+          if (roomId === endedRoomId) {
+            console.log(`Call in room ${endedRoomId} has ended`)
+            handleEndCall()
           }
         })
       } catch (error) {
@@ -265,6 +344,8 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
       }
 
       if (socketRef.current) {
+        // Emit end-call event before disconnecting
+        socketRef.current.emit("end-call", { roomId })
         socketRef.current.disconnect()
       }
     }
@@ -352,6 +433,11 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
         stopScreenSharing()
       }
 
+      // Notify other participants about screen sharing
+      if (socketRef.current) {
+        socketRef.current.emit("share-screen", { userId: callerId, roomId })
+      }
+
       setIsScreenSharing(true)
     } catch (error) {
       console.error("Error starting screen sharing:", error)
@@ -375,6 +461,11 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
       // Restore local video preview
       if (localVideoRef.current && localStream) {
         localVideoRef.current.srcObject = localStream
+      }
+
+      // Notify other participants about stopping screen sharing
+      if (socketRef.current) {
+        socketRef.current.emit("stop-screen-share", { userId: callerId, roomId })
       }
 
       setScreenStream(null)
@@ -411,27 +502,33 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
         // Remove from available users
         setAvailableUsers((prev) => prev.filter((u) => u._id !== user._id))
 
-        // Send notification to the user about the call invitation
+        // Send call invitation through socket
         if (socketRef.current) {
+          socketRef.current.emit("call-users", {
+            from: callerId,
+            toUsers: [user._id],
+            roomId
+          })
+
+          // Send notification to the user about the call invitation
           socketRef.current.emit("send-notification", {
             email: user.email,
             message: `${currentUser?.username || "Someone"} is inviting you to a video call`,
           })
 
-          // Send call invitation
+          // Log call invitation
           try {
-            await axios.post(`${apiUrl}/api/messages/add-call`, {
-              from: callerId,
-              to: user._id,
-              type: "video",
-              status: "invited",
-            })
-
-            // Call the user
-            await axios.post(`${apiUrl}/api/videoCall/call-user`, {
-              from: callerId,
-              to: user._id,
-              type: "video",
+            await fetch(`${apiUrl}/api/calls`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: callerId,
+                to: user._id,
+                type: "video",
+                status: "invited",
+              }),
             })
           } catch (error) {
             console.error("Error sending call invitation:", error)
@@ -447,15 +544,26 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
   const handleEndCall = async () => {
     try {
       // Log call details to database
-      await axios.post(`${apiUrl}/api/messages/add-call`, {
-        from: callerId,
-        to: receiverId,
-        type: "video",
-        status: "ended",
-        duration: callDuration,
+      await fetch(`${apiUrl}/api/calls`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: callerId,
+          to: receiverId,
+          type: "video",
+          status: "ended",
+          duration: callDuration,
+        }),
       })
     } catch (error) {
       console.error("Error logging call end:", error)
+    }
+
+    // Notify server about call ending
+    if (socketRef.current) {
+      socketRef.current.emit("end-call", { roomId })
     }
 
     // Stop all tracks
@@ -696,4 +804,3 @@ const VideoCall = ({ callerId, receiverId, onEndCall }) => {
 }
 
 export default VideoCall
-
